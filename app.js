@@ -1,5 +1,5 @@
 // Replace this placeholder string with your deployed Google Apps Script Web App URL
-const API_URL = "https://script.google.com/macros/s/AKfycbyDXbFSu1qmSO8rulhbsgJAwefFzmLZAZOeXE_K8D_gbNtxU9lIEIKm797McWjbyUjJ/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbw_muzejs1mczNr8d0KTVNxOrxujASOSgsB80LlELwl-oO91ItHEVWKycGs5INr6rEE/exec";
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js')
