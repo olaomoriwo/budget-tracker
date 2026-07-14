@@ -1,94 +1,124 @@
-// Replace this placeholder string with your deployed Google Apps Script Web App URL
-const API_URL = "https://script.google.com/macros/s/AKfycbw_muzejs1mczNr8d0KTVNxOrxujASOSgsB80LlELwl-oO91ItHEVWKycGs5INr6rEE/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyDXbFSu1qmSO8rulhbsgJAwefFzmLZAZOeXE_K8D_gbNtxU9lIEIKm797McWjbyUjJ/exec";
 
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js')
-    .then(() => console.log('Service Worker Registered'))
-    .catch((err) => console.error('Service Worker registration failed:', err));
-}
+let globalRecords = [];
+let budgetChartInstance = null;
+let trendChartInstance = null;
 
-async function fetchBudgetData() {
-  const budgetList = document.getElementById('budget-list');
+async function refreshDashboard() {
   try {
     const response = await fetch(API_URL);
-    const data = await response.json();
+    const payload = await response.json();
     
-    document.getElementById('salary-before').innerText = `£${parseFloat(data.income.beforeTax).toFixed(2)}`;
-    document.getElementById('salary-after').innerText = `£${parseFloat(data.income.afterTax).toFixed(2)}`;
+    globalRecords = payload.rawRecords;
     
-    budgetList.innerHTML = '';
-    
-    const categories = [
-      ...data.fixedCommitments,
-      ...data.variableExpenses,
-      ...data.savings
-    ];
-    
-    categories.forEach(item => {
-      const budget = parseFloat(item.budgeted) || 0;
-      const actual = parseFloat(item.actual) || 0;
-      const percentage = budget > 0 ? Math.min((actual / budget) * 100, 100) : 0;
-      
-      let progressColor = 'bg-indigo-500';
-      if (percentage > 90) progressColor = 'bg-rose-500';
-      else if (percentage > 70) progressColor = 'bg-amber-500';
-      
-      const itemHTML = `
-        <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
-          <div class="flex justify-between items-center mb-1">
-            <div>
-              <span class="font-medium text-white block">${item.item}</span>
-              <span class="text-xxs text-slate-400 uppercase tracking-wider">${item.category}</span>
-            </div>
-            <div class="text-right">
-              <span class="text-sm font-semibold text-slate-200">£${actual.toFixed(2)}</span>
-              <span class="text-xs text-slate-400">/ £${budget.toFixed(2)}</span>
-            </div>
-          </div>
-          <div class="w-full bg-slate-950 h-2 rounded-full overflow-hidden mt-2">
-            <div class="${progressColor} h-full transition-all duration-500" style="width: ${percentage}%"></div>
-          </div>
-        </div>
-      `;
-      budgetList.insertAdjacentHTML('beforeend', itemHTML);
-    });
-    
+    renderAdvisorAlerts(payload.advisorAlerts);
+    populateMonthFilter(globalRecords);
+    renderActiveMonthCharts();
+    renderHistoricalTrendChart(globalRecords);
   } catch (err) {
-    console.error(err);
-    budgetList.innerHTML = `<div class="text-rose-400 text-center py-4">Error loading data. Verify your App Script URL.</div>`;
+    console.error("Dashboard engine failed to load:", err);
   }
 }
 
-async function logExpense(e) {
-  e.preventDefault();
-  const submitBtn = document.getElementById('submit-btn');
-  const itemName = document.getElementById('expense-item').value;
-  const amount = document.getElementById('expense-amount').value;
+function renderAdvisorAlerts(alerts) {
+  const container = document.getElementById("advisor-insights");
+  container.innerHTML = "";
   
-  submitBtn.disabled = true;
-  submitBtn.innerText = 'Posting...';
+  if (alerts.length === 0) {
+    container.innerHTML = `
+      <div class="bg-emerald-950/40 border border-emerald-800 text-emerald-300 text-sm p-4 rounded-xl">
+        🎉 All critical commitments are safe. Spending velocities are tracking perfectly within targets.
+      </div>`;
+    return;
+  }
   
-  try {
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ itemName, amount })
-    });
-    const resData = await response.json();
+  alerts.forEach(alert => {
+    let style = "bg-amber-950/40 border-amber-800 text-amber-300";
+    if (alert.type === "critical") style = "bg-rose-950/50 border-rose-800 text-rose-300 font-semibold animate-pulse";
+    if (alert.type === "danger") style = "bg-rose-950/30 border-rose-900/50 text-rose-400";
     
-    if (resData.status === 'success') {
-      document.getElementById('expense-amount').value = '';
-      alert('Expense logged successfully!');
-      fetchBudgetData();
-    } else {
-      alert('Failed to log expense: ' + resData.message);
+    container.insertAdjacentHTML("beforeend", `
+      <div class="border text-sm p-3 rounded-xl ${style}">
+        ${alert.message}
+      </div>
+    `);
+  });
+}
+
+function populateMonthFilter(records) {
+  const filter = document.getElementById("month-filter");
+  const uniqueMonths = [...new Set(records.map(r => r.Month ? r.Month.toString().substring(0, 7) : ""))].filter(Boolean).sort();
+  
+  const currentSelection = filter.value;
+  filter.innerHTML = "";
+  
+  uniqueMonths.forEach(m => {
+    filter.insertAdjacentHTML("beforeend", `<option value="${m}">${m}</option>`);
+  });
+  
+  if (currentSelection && uniqueMonths.includes(currentSelection)) {
+    filter.value = currentSelection;
+  } else if (uniqueMonths.length > 0) {
+    filter.value = uniqueMonths[uniqueMonths.length - 1];
+  }
+}
+
+function renderActiveMonthCharts() {
+  const targetMonth = document.getElementById("month-filter").value;
+  const filtered = globalRecords.filter(r => r.Month && r.Month.toString().substring(0, 7) === targetMonth);
+  
+  const labels = filtered.map(r => r.Item);
+  const budgetedData = filtered.map(r => parseFloat(r.Budgeted) || 0);
+  const actualData = filtered.map(r => parseFloat(r.Actual) || 0);
+  
+  if (budgetChartInstance) budgetChartInstance.destroy();
+  
+  const ctx = document.getElementById("budgetVsActualChart").getContext("2d");
+  budgetChartInstance = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: labels,
+      datasets: [
+        { label: "Budgeted (£)", data: budgetedData, backgroundColor: "#6366f1" },
+        { label: "Actual (£)", data: actualData, backgroundColor: "#10b981" }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: { y: { ticks: { color: "#94a3b8" } }, x: { ticks: { color: "#94a3b8" } } }
     }
-  } catch (err) {
-    console.error(err);
-    alert('An error occurred while posting data.');
-  } finally {
-    submitBtn.disabled = false;
-    submitBtn.innerText = 'Post to Spreadsheet';
-  }
+  });
 }
 
-window.addEventListener('DOMContentLoaded', fetchBudgetData);
+function renderHistoricalTrendChart(records) {
+  const months = [...new Set(records.map(r => r.Month ? r.Month.toString().substring(0, 7) : ""))].filter(Boolean).sort();
+  const monthlyTotals = months.map(m => {
+    return records.filter(r => r.Month && r.Month.toString().substring(0, 7) === m)
+                  .reduce((sum, r) => sum + (parseFloat(r.Actual) || 0), 0);
+  });
+  
+  if (trendChartInstance) trendChartInstance.destroy();
+  
+  const ctx = document.getElementById("historicalTrendChart").getContext("2d");
+  trendChartInstance = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: months,
+      datasets: [{
+        label: "Total Outgoings (£)",
+        data: monthlyTotals,
+        borderColor: "#f59e0b",
+        tension: 0.2,
+        fill: false
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: { y: { ticks: { color: "#94a3b8" } }, x: { ticks: { color: "#94a3b8" } } }
+    }
+  });
+}
+
+window.addEventListener("DOMContentLoaded", refreshDashboard);
