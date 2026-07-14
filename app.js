@@ -4,7 +4,7 @@ let globalRecords = [];
 let budgetChartInstance = null;
 let trendChartInstance = null;
 
-async function refreshDashboard() {
+async function fetchBudgetData() {
   try {
     const response = await fetch(API_URL);
     const payload = await response.json();
@@ -17,14 +17,24 @@ async function refreshDashboard() {
     renderHistoricalTrendChart(globalRecords);
   } catch (err) {
     console.error("Dashboard engine failed to load:", err);
+    const container = document.getElementById("advisor-insights");
+    if (container) {
+      container.innerHTML = `<div class="text-rose-400 p-4 bg-slate-800 rounded-xl border border-rose-900/30">Error establishing secure sheet link. Check your API settings.</div>`;
+    }
   }
+}
+
+// Global fallback handler for index template setups
+function refreshDashboard() {
+  fetchBudgetData();
 }
 
 function renderAdvisorAlerts(alerts) {
   const container = document.getElementById("advisor-insights");
+  if (!container) return;
   container.innerHTML = "";
   
-  if (alerts.length === 0) {
+  if (!alerts || alerts.length === 0) {
     container.innerHTML = `
       <div class="bg-emerald-950/40 border border-emerald-800 text-emerald-300 text-sm p-4 rounded-xl">
         🎉 All critical commitments are safe. Spending velocities are tracking perfectly within targets.
@@ -47,8 +57,9 @@ function renderAdvisorAlerts(alerts) {
 
 function populateMonthFilter(records) {
   const filter = document.getElementById("month-filter");
-  const uniqueMonths = [...new Set(records.map(r => r.Month ? r.Month.toString().substring(0, 7) : ""))].filter(Boolean).sort();
+  if (!filter) return;
   
+  const uniqueMonths = [...new Set(records.map(r => r.Month ? r.Month.toString().substring(0, 7) : ""))].filter(Boolean).sort();
   const currentSelection = filter.value;
   filter.innerHTML = "";
   
@@ -59,12 +70,15 @@ function populateMonthFilter(records) {
   if (currentSelection && uniqueMonths.includes(currentSelection)) {
     filter.value = currentSelection;
   } else if (uniqueMonths.length > 0) {
-    filter.value = uniqueMonths[uniqueMonths.length - 1];
+    filter.value = uniqueMonths[uniqueMonths.length - 1]; // Use latest month entry
   }
 }
 
 function renderActiveMonthCharts() {
-  const targetMonth = document.getElementById("month-filter").value;
+  const filter = document.getElementById("month-filter");
+  if (!filter || !filter.value) return;
+  const targetMonth = filter.value;
+  
   const filtered = globalRecords.filter(r => r.Month && r.Month.toString().substring(0, 7) === targetMonth);
   
   const labels = filtered.map(r => r.Item);
@@ -73,7 +87,10 @@ function renderActiveMonthCharts() {
   
   if (budgetChartInstance) budgetChartInstance.destroy();
   
-  const ctx = document.getElementById("budgetVsActualChart").getContext("2d");
+  const canvas = document.getElementById("budgetVsActualChart");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  
   budgetChartInstance = new Chart(ctx, {
     type: "bar",
     data: {
@@ -86,12 +103,20 @@ function renderActiveMonthCharts() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      scales: { y: { ticks: { color: "#94a3b8" } }, x: { ticks: { color: "#94a3b8" } } }
+      scales: { 
+        y: { ticks: { color: "#94a3b8" }, grid: { color: "#334155" } }, 
+        x: { ticks: { color: "#94a3b8" }, grid: { display: false } } 
+      },
+      plugins: { legend: { labels: { color: "#f8fafc" } } }
     }
   });
 }
 
 function renderHistoricalTrendChart(records) {
+  const canvas = document.getElementById("historicalTrendChart");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+
   const months = [...new Set(records.map(r => r.Month ? r.Month.toString().substring(0, 7) : ""))].filter(Boolean).sort();
   const monthlyTotals = months.map(m => {
     return records.filter(r => r.Month && r.Month.toString().substring(0, 7) === m)
@@ -100,7 +125,6 @@ function renderHistoricalTrendChart(records) {
   
   if (trendChartInstance) trendChartInstance.destroy();
   
-  const ctx = document.getElementById("historicalTrendChart").getContext("2d");
   trendChartInstance = new Chart(ctx, {
     type: "line",
     data: {
@@ -109,16 +133,21 @@ function renderHistoricalTrendChart(records) {
         label: "Total Outgoings (£)",
         data: monthlyTotals,
         borderColor: "#f59e0b",
+        backgroundColor: "rgba(245, 158, 11, 0.1)",
         tension: 0.2,
-        fill: false
+        fill: true
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      scales: { y: { ticks: { color: "#94a3b8" } }, x: { ticks: { color: "#94a3b8" } } }
+      scales: { 
+        y: { ticks: { color: "#94a3b8" }, grid: { color: "#334155" } }, 
+        x: { ticks: { color: "#94a3b8" }, grid: { display: false } } 
+      },
+      plugins: { legend: { labels: { color: "#f8fafc" } } }
     }
   });
 }
 
-window.addEventListener("DOMContentLoaded", refreshDashboard);
+window.addEventListener("DOMContentLoaded", fetchBudgetData);
