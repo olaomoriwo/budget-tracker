@@ -36,10 +36,35 @@ function generateFinancialAdvisorInsights(records) {
   const currentMonthRecords = records.filter(r => r.Month && r.Month.toString().substring(0, 7) === targetMonth);
   const alerts = [];
   
+  // Calculate Tithe Status Specifically
+  const incomeRow = currentMonthRecords.find(r => r.Item === "Net Take-Home");
+  const actualIncome = incomeRow ? parseFloat(incomeRow.Actual) || 0 : 2040.35;
+  const titheRow = currentMonthRecords.find(r => r.Item === "Tithe");
+  
+  if (titheRow) {
+    const titheBudget = actualIncome * 0.1; // Hard-coded 10% enforcement
+    const titheActual = parseFloat(titheRow.Actual) || 0;
+    const titheDiff = titheBudget - titheActual;
+    const banner = document.getElementById("tithe-floating-banner");
+    const bannerAmount = document.getElementById("tithe-balance-amount");
+    
+    if (titheDiff > 0.01) {
+      if (banner && bannerAmount) {
+        bannerAmount.innerText = titheDiff.toFixed(2);
+        banner.classList.remove("hidden");
+      }
+    } else {
+      if (banner) banner.classList.add("hidden");
+    }
+  }
+
   currentMonthRecords.forEach(entry => {
     const budget = parseFloat(entry.Budgeted) || 0;
     const actual = parseFloat(entry.Actual) || 0;
     const isSavings = entry.Category.toLowerCase().includes("sav") || entry.Category.toLowerCase().includes("buffer");
+    
+    // Ignore Tithe and Income from regular expense warning logic
+    if (entry.Item === "Tithe" || entry.Item === "Net Take-Home") return;
     
     if (isSavings) {
       if (actual > budget) {
@@ -53,7 +78,7 @@ function generateFinancialAdvisorInsights(records) {
           message: `⚠️ Under-funded savings: You are £${(budget - actual).toFixed(2)} short of your target for <strong>${entry.Item}</strong>.`
         });
       }
-    } else if (entry.Item !== "Net Take-Home") {
+    } else {
       if (actual > budget) {
         alerts.push({
           type: "danger",
