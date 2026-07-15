@@ -1,4 +1,4 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbyDXbFSu1qmSO8rulhbsgJAwefFzmLZAZOeXE_K8D_gbNtxU9lIEIKm797McWjbyUjJ/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbw_muzejs1mczNr8d0KTVNxOrxujASOSgsB80LlELwl-oO91ItHEVWKycGs5INr6rEE/exec";
 
 let globalRecords = [];
 let budgetChartInstance = null;
