@@ -14,31 +14,52 @@
       font-family: 'Plus Jakarta Sans', sans-serif;
       background: radial-gradient(circle at top right, #111827, #090d16);
     }
-    .tooltip-container { position: relative; display: inline-block; }
+    
+    /* Bulletproof Responsive Tooltip System */
+    .tooltip-container { 
+      position: relative; 
+      display: inline-flex;
+      align-items: center;
+    }
     .tooltip-text {
       visibility: hidden;
-      width: 240px;
+      width: 220px;
       background-color: #111c2e;
       color: #94a3b8;
       text-align: left;
-      border: 1px solid #1e293b;
+      border: 1px solid #334155;
       border-radius: 12px;
-      padding: 12px;
+      padding: 10px 12px;
       position: absolute;
-      z-index: 100;
-      bottom: 130%;
+      z-index: 999;
+      bottom: 140%;
       left: 50%;
       transform: translateX(-50%);
       opacity: 0;
-      transition: opacity 0.2s, visibility 0.2s;
-      font-size: 0.75rem;
+      transition: opacity 0.15s ease-in-out;
+      font-size: 0.7rem;
       font-weight: 400;
       line-height: 1.4;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.7);
+      pointer-events: none;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6);
     }
-    .tooltip-container:hover .tooltip-text { visibility: visible; opacity: 1; }
     
-    /* Scrollbar formatting for chat logs */
+    /* Dynamic adjustments for rightmost tooltip bounds to prevent screen cutoff */
+    .tooltip-left .tooltip-text {
+      left: 0;
+      transform: translateX(0);
+    }
+    .tooltip-right .tooltip-text {
+      left: auto;
+      right: 0;
+      transform: translateX(0);
+    }
+
+    .tooltip-container:hover .tooltip-text { 
+      visibility: visible; 
+      opacity: 1; 
+    }
+    
     .custom-scrollbar::-webkit-scrollbar { width: 4px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 99px; }
@@ -70,18 +91,18 @@
     </header>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-      <div class="bg-gradient-to-br from-slate-900/60 to-slate-900/20 backdrop-blur-md border border-slate-800/50 p-5 rounded-2xl relative overflow-hidden group hover:border-slate-700/60 transition-all">
+      <div class="bg-gradient-to-br from-slate-900/60 to-slate-900/20 backdrop-blur-md border border-slate-800/50 p-5 rounded-2xl relative group hover:border-slate-700/60 transition-all">
         <div class="flex items-center justify-between mb-2">
           <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Net Take-Home Income</span>
-          <div class="tooltip-container cursor-pointer text-slate-500 hover:text-slate-400 transition text-xs">
+          <div class="tooltip-container tooltip-left cursor-pointer text-slate-500 hover:text-slate-400 transition text-xs">
             ⓘ <span class="tooltip-text">Absolute net monthly earnings serving as the foundational limit for tracking consumer expenditure limits.</span>
           </div>
         </div>
         <span id="metric-income" class="text-2xl sm:text-3xl font-bold tracking-tight text-emerald-400">£0.00</span>
-        <div class="absolute bottom-0 left-0 right-0 h-[3px] bg-emerald-500/20 group-hover:bg-emerald-500/40 transition-all"></div>
+        <div class="absolute bottom-0 left-0 right-0 h-[3px] bg-emerald-500/20 rounded-b-2xl group-hover:bg-emerald-500/40 transition-all"></div>
       </div>
       
-      <div class="bg-gradient-to-br from-slate-900/60 to-slate-900/20 backdrop-blur-md border border-slate-800/50 p-5 rounded-2xl relative overflow-hidden group hover:border-slate-700/60 transition-all">
+      <div class="bg-gradient-to-br from-slate-900/60 to-slate-900/20 backdrop-blur-md border border-slate-800/50 p-5 rounded-2xl relative group hover:border-slate-700/60 transition-all">
         <div class="flex items-center justify-between mb-2">
           <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Total Active Outgoings</span>
           <div class="tooltip-container cursor-pointer text-slate-500 hover:text-slate-400 transition text-xs">
@@ -89,18 +110,18 @@
           </div>
         </div>
         <span id="metric-outgoings" class="text-2xl sm:text-3xl font-bold tracking-tight text-rose-400">£0.00</span>
-        <div class="absolute bottom-0 left-0 right-0 h-[3px] bg-rose-500/20 group-hover:bg-rose-500/40 transition-all"></div>
+        <div class="absolute bottom-0 left-0 right-0 h-[3px] bg-rose-500/20 rounded-b-2xl group-hover:bg-rose-500/40 transition-all"></div>
       </div>
       
-      <div class="bg-gradient-to-br from-slate-900/60 to-slate-900/20 backdrop-blur-md border border-slate-800/50 p-5 rounded-2xl relative overflow-hidden group hover:border-slate-700/60 transition-all sm:col-span-2 lg:col-span-1">
+      <div class="bg-gradient-to-br from-slate-900/60 to-slate-900/20 backdrop-blur-md border border-slate-800/50 p-5 rounded-2xl relative group hover:border-slate-700/60 transition-all sm:col-span-2 lg:col-span-1">
         <div class="flex items-center justify-between mb-2">
           <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Preserved Capital (Saved)</span>
-          <div class="tooltip-container cursor-pointer text-slate-500 hover:text-slate-400 transition text-xs">
+          <div class="tooltip-container tooltip-right cursor-pointer text-slate-500 hover:text-slate-400 transition text-xs">
             ⓘ <span class="tooltip-text">Combined sum added to long-term wealth portfolios and emergency cash buffers.</span>
           </div>
         </div>
         <span id="metric-saved" class="text-2xl sm:text-3xl font-bold tracking-tight text-sky-400">£0.00</span>
-        <div class="absolute bottom-0 left-0 right-0 h-[3px] bg-sky-500/20 group-hover:bg-sky-500/40 transition-all"></div>
+        <div class="absolute bottom-0 left-0 right-0 h-[3px] bg-sky-500/20 rounded-b-2xl group-hover:bg-sky-500/40 transition-all"></div>
       </div>
     </div>
 
@@ -109,7 +130,7 @@
         <h2 class="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
           <span>⚙️</span> Core Intelligence Engine
         </h2>
-        <div class="tooltip-container cursor-pointer text-slate-500 text-xs">
+        <div class="tooltip-container tooltip-left cursor-pointer text-slate-500 text-xs">
           ⓘ <span class="tooltip-text">Runs continuous multi-variant analysis logic to flag velocity risks, anomalies, or target deviations across ledger codes.</span>
         </div>
       </div>
@@ -124,7 +145,7 @@
           <h3 class="text-sm font-bold text-slate-300 tracking-tight flex items-center gap-1.5">
             Budget vs Actual Metrics
           </h3>
-          <div class="tooltip-container cursor-pointer text-slate-500 text-xs font-normal">
+          <div class="tooltip-container tooltip-left cursor-pointer text-slate-500 text-xs font-normal">
             ⓘ <span class="tooltip-text">Evaluates planned allocation strategies against hard transactional variables for individual accounts.</span>
           </div>
         </div>
@@ -138,7 +159,7 @@
           <h3 class="text-sm font-bold text-slate-300 tracking-tight flex items-center gap-1.5">
             Capital Burn Gauge
           </h3>
-          <div class="tooltip-container cursor-pointer text-slate-500 text-xs font-normal">
+          <div class="tooltip-container tooltip-right cursor-pointer text-slate-500 text-xs font-normal">
             ⓘ <span class="tooltip-text">Doughnut representation tracking spent funds (Rose) versus unallocated capital buffers (Emerald).</span>
           </div>
         </div>
@@ -154,7 +175,7 @@
         <h3 class="text-sm font-bold text-slate-300 tracking-tight flex items-center gap-1.5">
           Month-on-Month Expense Tracking
         </h3>
-        <div class="tooltip-container cursor-pointer text-slate-500 text-xs font-normal">
+        <div class="tooltip-container tooltip-left cursor-pointer text-slate-500 text-xs font-normal">
           ⓘ <span class="tooltip-text">Plots overall expenditure variations across consecutive tracking cycles to evaluate structural efficiency.</span>
         </div>
       </div>
@@ -168,12 +189,12 @@
     <span>⛪</span>
     <span>System Alert: <strong class="text-white font-bold">You are owing God £<span id="tithe-balance-amount">0.00</span> in tithe balance</strong>.</span>
     <div class="tooltip-container cursor-pointer text-rose-400 text-xs ml-1 font-normal">
-      ⓘ <span class="tooltip-text" style="bottom: 150%;">Enforces non-negotiable 10% take-home allocations. Remains pinned across all monthly filters until cleared.</span>
+      ⓘ <span class="tooltip-text" style="bottom: 150%;">Enforces non-negotiable 10% take-home allocations. Pinned across filters until cleared.</span>
     </div>
   </div>
 
   <div id="ai-chat-drawer" class="fixed bottom-6 right-6 z-50 flex flex-col items-end font-sans">
-    <button onclick="toggleChatWindow()" id="chat-trigger-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white p-3.5 rounded-2xl shadow-2xl transition-all duration-300 hover:rotate-6 flex items-center justify-center border border-indigo-500/40 group active:scale-95">
+    <button onclick="toggleChatWindow()" id="chat-trigger-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white p-3.5 rounded-2xl shadow-2xl transition-all duration-300 flex items-center justify-center border border-indigo-500/40 group active:scale-95">
       <svg class="w-6 h-6 group-hover:scale-105 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
       </svg>
