@@ -8,6 +8,38 @@
   <meta name="theme-color" content="#0f172a">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Clean CSS-only Tooltip System */
+    .tooltip-container {
+      position: relative;
+      display: inline-block;
+    }
+    .tooltip-text {
+      visibility: hidden;
+      width: 260px;
+      background-color: #1e293b;
+      color: #cbd5e1;
+      text-align: left;
+      border: 1px solid #475569;
+      border-radius: 8px;
+      padding: 12px;
+      position: absolute;
+      z-index: 100;
+      bottom: 125%;
+      left: 50%;
+      transform: translateX(-50%);
+      opacity: 0;
+      transition: opacity 0.2s, visibility 0.2s;
+      font-weight: normal;
+      font-size: 0.75rem;
+      line-height: 1.4;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    }
+    .tooltip-container:hover .tooltip-text {
+      visibility: visible;
+      opacity: 1;
+    }
+  </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen font-sans pb-24">
 
@@ -24,15 +56,32 @@
 
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
       <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
-        <span class="text-xs text-slate-400 uppercase tracking-wider block">Net Income</span>
+        <div class="flex items-center gap-1.5 mb-1">
+          <span class="text-xs text-slate-400 uppercase tracking-wider block">Net Income</span>
+          <div class="tooltip-container cursor-pointer text-slate-500 text-xs">
+            ⓘ <span class="tooltip-text">Your absolute net take-home pay after taxes. This serves as the baseline for your monthly spending cap and the 10% non-negotiable tithe calculations.</span>
+          </div>
+        </div>
         <span id="metric-income" class="text-2xl font-bold text-emerald-400">£0.00</span>
       </div>
+      
       <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
-        <span class="text-xs text-slate-400 uppercase tracking-wider block">Total Actual Outgoings</span>
+        <div class="flex items-center gap-1.5 mb-1">
+          <span class="text-xs text-slate-400 uppercase tracking-wider block">Total Actual Outgoings</span>
+          <div class="tooltip-container cursor-pointer text-slate-500 text-xs">
+            ⓘ <span class="tooltip-text">The combined total of all real expenditures, bills paid, and savings targets successfully funded during the focus month.</span>
+          </div>
+        </div>
         <span id="metric-outgoings" class="text-2xl font-bold text-rose-400">£0.00</span>
       </div>
+      
       <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
-        <span class="text-xs text-slate-400 uppercase tracking-wider block">Total Amount Saved</span>
+        <div class="flex items-center gap-1.5 mb-1">
+          <span class="text-xs text-slate-400 uppercase tracking-wider block">Total Amount Saved</span>
+          <div class="tooltip-container cursor-pointer text-slate-500 text-xs">
+            ⓘ <span class="tooltip-text">Tracks the true cash added to wealth preserves, combining both emergency buffers and short-term thrift balances.</span>
+          </div>
+        </div>
         <span id="metric-saved" class="text-2xl font-bold text-blue-400">£0.00</span>
       </div>
     </div>
@@ -40,6 +89,9 @@
     <section class="mb-8">
       <h2 class="text-lg font-semibold text-amber-400 mb-3 flex items-center gap-2">
         <span>🤖</span> Financial Advisor Insights
+        <div class="tooltip-container cursor-pointer text-slate-500 text-sm font-normal">
+          ⓘ <span class="tooltip-text">Automated analysis rules. Highlights savings milestones, flags pacing risks if line items breach 85% of allocations, and logs overspending threats.</span>
+        </div>
       </h2>
       <div id="advisor-insights" class="space-y-2">
         <div class="text-slate-500 text-sm bg-slate-800/50 p-4 rounded-xl border border-slate-800">Running data analysis...</div>
@@ -48,14 +100,24 @@
 
     <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
       <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 lg:col-span-2">
-        <h3 class="text-sm font-semibold text-slate-300 mb-3">Budget vs Actual Allocation</h3>
+        <h3 class="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-1.5">
+          Budget vs Actual Allocation
+          <div class="tooltip-container cursor-pointer text-slate-500 text-xs font-normal">
+            ⓘ <span class="tooltip-text">Side-by-side assessment of target projections (Indigo) against absolute execution (Emerald) for individual accounts and household line items.</span>
+          </div>
+        </h3>
         <div class="relative h-72">
           <canvas id="budgetVsActualChart"></canvas>
         </div>
       </div>
       
       <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700">
-        <h3 class="text-sm font-semibold text-slate-300 mb-3">Take-home Utilisation Gauge</h3>
+        <h3 class="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-1.5">
+          Take-home Utilisation Gauge
+          <div class="tooltip-container cursor-pointer text-slate-500 text-xs font-normal">
+            ⓘ <span class="tooltip-text">Visualizes income consumption. The Rose section marks spent funds, while Emerald signals your remaining capital safety buffer.</span>
+          </div>
+        </h3>
         <div class="relative h-72 flex flex-col justify-center items-center">
           <div class="w-full h-48 relative">
             <canvas id="utilisationPieChart"></canvas>
@@ -66,7 +128,12 @@
     </section>
 
     <section class="bg-slate-800 p-4 rounded-2xl border border-slate-700 mb-8">
-      <h3 class="text-sm font-semibold text-slate-300 mb-3">Month-on-Month Expenditure Trends</h3>
+      <h3 class="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-1.5">
+        Month-on-Month Expenditure Trends
+        <div class="tooltip-container cursor-pointer text-slate-500 text-xs font-normal">
+          ⓘ <span class="tooltip-text">Macro timeline analysis tracking total cost trajectories across consecutive financial cycles to audit cost containment over time.</span>
+        </div>
+      </h3>
       <div class="relative h-64">
         <canvas id="historicalTrendChart"></canvas>
       </div>
@@ -82,6 +149,9 @@
   <div id="tithe-floating-banner" class="hidden fixed bottom-0 left-0 right-0 bg-rose-950 border-t border-rose-700 py-3 px-4 text-center text-rose-200 text-sm font-medium z-50 shadow-2xl flex items-center justify-center gap-2">
     <span>⛪</span>
     <span>You have an outstanding commitment: <strong>You are owing God £<span id="tithe-balance-amount">0.00</span> in tithe balance</strong>.</span>
+    <div class="tooltip-container cursor-pointer text-rose-400 text-xs ml-1">
+      ⓘ <span class="tooltip-text" style="bottom: 145%;">Enforces your strict, non-negotiable 10% take-home tithe policy. This banner acts as a persistent alert across any historical filter until the balance is completely paid.</span>
+    </div>
   </div>
 
   <script src="app.js"></script>
