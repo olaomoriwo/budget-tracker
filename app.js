@@ -3,6 +3,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyDXbFSu1qmSO8rulhbsgJA
 let globalRecords = [];
 let budgetChartInstance = null;
 let trendChartInstance = null;
+let pieChartInstance = null;
 
 async function fetchBudgetData() {
   try {
@@ -19,14 +20,17 @@ async function fetchBudgetData() {
     console.error("Dashboard engine failed to load:", err);
     const container = document.getElementById("advisor-insights");
     if (container) {
-      container.innerHTML = `<div class="text-rose-400 p-4 bg-slate-800 rounded-xl border border-rose-900/30">Error establishing secure sheet link. Check your API settings.</div>`;
+      container.innerHTML = `<div class="text-rose-400 p-4 bg-slate-800 rounded-xl border border-rose-900/30">Error establishing secure sheet link.</div>`;
     }
   }
 }
 
-// Global fallback handler for index template setups
 function refreshDashboard() {
   fetchBudgetData();
+}
+
+function parseMarkdown(text) {
+  return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 }
 
 function renderAdvisorAlerts(alerts) {
@@ -47,9 +51,10 @@ function renderAdvisorAlerts(alerts) {
     if (alert.type === "critical") style = "bg-rose-950/50 border-rose-800 text-rose-300 font-semibold animate-pulse";
     if (alert.type === "danger") style = "bg-rose-950/30 border-rose-900/50 text-rose-400";
     
+    const parsedMessage = parseMarkdown(alert.message);
     container.insertAdjacentHTML("beforeend", `
       <div class="border text-sm p-3 rounded-xl ${style}">
-        ${alert.message}
+        ${parsedMessage}
       </div>
     `);
   });
@@ -70,7 +75,7 @@ function populateMonthFilter(records) {
   if (currentSelection && uniqueMonths.includes(currentSelection)) {
     filter.value = currentSelection;
   } else if (uniqueMonths.length > 0) {
-    filter.value = uniqueMonths[uniqueMonths.length - 1]; // Use latest month entry
+    filter.value = uniqueMonths[uniqueMonths.length - 1];
   }
 }
 
@@ -81,33 +86,92 @@ function renderActiveMonthCharts() {
   
   const filtered = globalRecords.filter(r => r.Month && r.Month.toString().substring(0, 7) === targetMonth);
   
-  const labels = filtered.map(r => r.Item);
-  const budgetedData = filtered.map(r => parseFloat(r.Budgeted) || 0);
-  const actualData = filtered.map(r => parseFloat(r.Actual) || 0);
+  // Isolate Income Entry vs Expenses
+  const incomeRow = filtered.find(r => r.Item === "Net Take-Home");
+  const actualIncome = incomeRow ? parseFloat(incomeRow.Actual) || 0 : 2040.35; // Default fallback
+  
+  const expenseItems = filtered.filter(r => r.Item !== "Net Take-Home");
+  
+  // Compute Key Metrics
+  const totalActualOutgoings = expenseItems.reduce((sum, r) => sum + (parseFloat(r.Actual) || 0), 0);
+  const savingsItems = expenseItems.filter(r => r.Category.toLowerCase().includes("sav") || r.Category.toLowerCase().includes("buffer"));
+  const totalActualSaved = savingsItems.reduce((sum, r) => sum + (parseFloat(r.Actual) || 0), 0);
+  
+  // Render Upper Ribbon Cards
+  document.getElementById("metric-income").innerText = `£${actualIncome.toLocaleString('en-GB', {minimumFractionDigits: 2})}`;
+  document.getElementById("metric-outgoings").innerText = `£${totalActualOutgoings.toLocaleString('en-GB', {minimumFractionDigits: 2})}`;
+  document.getElementById("metric-saved").innerText = `£${totalActualSaved.toLocaleString('en-GB', {minimumFractionDigits: 2})}`;
+
+  // Filter Bar Data excluding raw Income Rows
+  const labels = expenseItems.map(r => r.Item);
+  const budgetedData = expenseItems.map(r => parseFloat(r.Budgeted) || 0);
+  const actualData = expenseItems.map(r => parseFloat(r.Actual) || 0);
   
   if (budgetChartInstance) budgetChartInstance.destroy();
   
   const canvas = document.getElementById("budgetVsActualChart");
+  if (canvas) {
+    const ctx = canvas.getContext("2d");
+    budgetChartInstance = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [
+          { label: "Budgeted (£)", data: budgetedData, backgroundColor: "#6366f1" },
+          { label: "Actual (£)", data: actualData, backgroundColor: "#10b981" }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { 
+          y: { ticks: { color: "#94a3b8" }, grid: { color: "#334155" } }, 
+          x: { ticks: { color: "#94a3b8" }, grid: { display: false } } 
+        },
+        plugins: { legend: { labels: { color: "#f8fafc" } } }
+      }
+    });
+  }
+
+  // Render Income Utilisation Pie/Doughnut Chart
+  renderUtilisationPie(actualIncome, totalActualOutgoings);
+}
+
+function renderUtilisationPie(income, outgoings) {
+  if (pieChartInstance) pieChartInstance.destroy();
+  
+  const canvas = document.getElementById("utilisationPieChart");
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
   
-  budgetChartInstance = new Chart(ctx, {
-    type: "bar",
+  const remainingBuffer = Math.max(income - outgoings, 0);
+  const overspentAmount = Math.max(outgoings - income, 0);
+  
+  const dataValues = [Math.min(outgoings, income), remainingBuffer];
+  const chartColors = ["#f43f5e", "#10b981"]; // Rose for spent, Emerald for buffer
+  
+  if (overspentAmount > 0) {
+    document.getElementById("gauge-label").innerHTML = `<span class="text-rose-400 font-semibold">Overspent by £${overspentAmount.toFixed(2)}</span> of take-home pay.`;
+  } else {
+    const safePercent = ((outgoings / income) * 100).toFixed(0);
+    document.getElementById("gauge-label").innerHTML = `Using <span class="text-indigo-400 font-semibold">${safePercent}%</span> of total take-home pay.`;
+  }
+
+  pieChartInstance = new Chart(ctx, {
+    type: "doughnut",
     data: {
-      labels: labels,
-      datasets: [
-        { label: "Budgeted (£)", data: budgetedData, backgroundColor: "#6366f1" },
-        { label: "Actual (£)", data: actualData, backgroundColor: "#10b981" }
-      ]
+      labels: ["Spent", "Remaining Buffer"],
+      datasets: [{
+        data: dataValues,
+        backgroundColor: chartColors,
+        borderWidth: 0
+      }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      scales: { 
-        y: { ticks: { color: "#94a3b8" }, grid: { color: "#334155" } }, 
-        x: { ticks: { color: "#94a3b8" }, grid: { display: false } } 
-      },
-      plugins: { legend: { labels: { color: "#f8fafc" } } }
+      plugins: { legend: { display: false } },
+      cutout: "75%"
     }
   });
 }
@@ -119,7 +183,7 @@ function renderHistoricalTrendChart(records) {
 
   const months = [...new Set(records.map(r => r.Month ? r.Month.toString().substring(0, 7) : ""))].filter(Boolean).sort();
   const monthlyTotals = months.map(m => {
-    return records.filter(r => r.Month && r.Month.toString().substring(0, 7) === m)
+    return records.filter(r => r.Month && r.Month.toString().substring(0, 7) === m && r.Item !== "Net Take-Home")
                   .reduce((sum, r) => sum + (parseFloat(r.Actual) || 0), 0);
   });
   
