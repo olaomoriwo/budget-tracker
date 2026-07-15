@@ -1,4 +1,4 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbw_muzejs1mczNr8d0KTVNxOrxujASOSgsB80LlELwl-oO91ItHEVWKycGs5INr6rEE/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyDXbFSu1qmSO8rulhbsgJAwefFzmLZAZOeXE_K8D_gbNtxU9lIEIKm797McWjbyUjJ/exec";
 
 let globalRecords = [];
 let budgetChartInstance = null;
@@ -36,13 +36,12 @@ function generateFinancialAdvisorInsights(records) {
   const currentMonthRecords = records.filter(r => r.Month && r.Month.toString().substring(0, 7) === targetMonth);
   const alerts = [];
   
-  // Calculate Tithe Status Specifically
   const incomeRow = currentMonthRecords.find(r => r.Item === "Net Take-Home");
   const actualIncome = incomeRow ? parseFloat(incomeRow.Actual) || 0 : 2040.35;
   const titheRow = currentMonthRecords.find(r => r.Item === "Tithe");
   
   if (titheRow) {
-    const titheBudget = actualIncome * 0.1; // Hard-coded 10% enforcement
+    const titheBudget = actualIncome * 0.1;
     const titheActual = parseFloat(titheRow.Actual) || 0;
     const titheDiff = titheBudget - titheActual;
     const banner = document.getElementById("tithe-floating-banner");
@@ -63,7 +62,6 @@ function generateFinancialAdvisorInsights(records) {
     const actual = parseFloat(entry.Actual) || 0;
     const isSavings = entry.Category.toLowerCase().includes("sav") || entry.Category.toLowerCase().includes("buffer");
     
-    // Ignore Tithe and Income from regular expense warning logic
     if (entry.Item === "Tithe" || entry.Item === "Net Take-Home") return;
     
     if (isSavings) {
@@ -209,9 +207,6 @@ function renderHistoricalTrendChart(records) {
   });
 }
 
-window.addEventListener("DOMContentLoaded", fetchBudgetData);
-
-// Interactive AI Chat Box Drawer Interface Event Handlers
 function toggleChatWindow() {
   const triggerBtn = document.getElementById("chat-trigger-btn");
   const windowCard = document.getElementById("chat-window-card");
@@ -219,7 +214,6 @@ function toggleChatWindow() {
   if (windowCard.classList.contains("hidden")) {
     windowCard.classList.remove("hidden");
     triggerBtn.classList.add("hidden");
-    // Scroll to latest message immediately on view expansion
     const logsBox = document.getElementById("chat-logs-box");
     logsBox.scrollTop = logsBox.scrollHeight;
   } else {
@@ -236,7 +230,6 @@ async function handleUserMessage(event) {
   
   if (!promptQuery) return;
   
-  // Render user prompt message inside the box logs bubble immediately
   logsBox.insertAdjacentHTML("beforeend", `
     <div class="bg-slate-800 border border-slate-700/50 p-3 rounded-xl text-slate-200 text-right max-w-[85%] ml-auto leading-relaxed">
       ${promptQuery}
@@ -246,25 +239,48 @@ async function handleUserMessage(event) {
   inputField.value = "";
   logsBox.scrollTop = logsBox.scrollHeight;
   
-  // Render temporary "Thinking..." streaming loader status indicator
   const loadingId = "msg-loader-" + Date.now();
   logsBox.insertAdjacentHTML("beforeend", `
     <div id="${loadingId}" class="bg-slate-950/40 border border-slate-800 text-slate-400 p-3 rounded-xl max-w-[85%] mr-auto italic animate-pulse">
-      Analyzing spreadsheet ledger...
+      Consulting financial models...
     </div>
   `);
   logsBox.scrollTop = logsBox.scrollHeight;
 
-  // Placeholder interface routing hook. We will link this live to an LLM endpoint next.
-  setTimeout(() => {
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        prompt: promptQuery,
+        context: globalRecords
+      })
+    });
+    
+    const data = await response.json();
+    const loaderElement = document.getElementById(loadingId);
+    if (loaderElement) loaderElement.remove();
+    
+    const parsedReply = data.reply ? data.reply.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') : "Operational routing variance detected.";
+    
+    logsBox.insertAdjacentHTML("beforeend", `
+      <div class="bg-indigo-950/40 border border-indigo-900/50 p-3 rounded-xl text-slate-200 max-w-[85%] mr-auto leading-relaxed">
+        ${parsedReply}
+      </div>
+    `);
+    logsBox.scrollTop = logsBox.scrollHeight;
+
+  } catch (err) {
+    console.error(err);
     const loaderElement = document.getElementById(loadingId);
     if (loaderElement) loaderElement.remove();
     
     logsBox.insertAdjacentHTML("beforeend", `
-      <div class="bg-slate-900/60 border border-slate-800 p-3 rounded-xl text-slate-300 max-w-[85%] mr-auto leading-relaxed">
-        I am currently setting up my live cloud processing link. Soon I will inspect your <strong>${globalRecords.length} lines of historical data</strong> to help answer: "${promptQuery}"!
+      <div class="bg-rose-950/30 border border-rose-900/50 p-3 rounded-xl text-rose-400 max-w-[85%] mr-auto">
+        Unable to route request stream to secure cloud core processor. Check connections.
       </div>
     `);
     logsBox.scrollTop = logsBox.scrollHeight;
-  }, 1200);
+  }
 }
+
+window.addEventListener("DOMContentLoaded", fetchBudgetData);
