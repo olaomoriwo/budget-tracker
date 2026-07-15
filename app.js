@@ -210,3 +210,61 @@ function renderHistoricalTrendChart(records) {
 }
 
 window.addEventListener("DOMContentLoaded", fetchBudgetData);
+
+// Interactive AI Chat Box Drawer Interface Event Handlers
+function toggleChatWindow() {
+  const triggerBtn = document.getElementById("chat-trigger-btn");
+  const windowCard = document.getElementById("chat-window-card");
+  
+  if (windowCard.classList.contains("hidden")) {
+    windowCard.classList.remove("hidden");
+    triggerBtn.classList.add("hidden");
+    // Scroll to latest message immediately on view expansion
+    const logsBox = document.getElementById("chat-logs-box");
+    logsBox.scrollTop = logsBox.scrollHeight;
+  } else {
+    windowCard.classList.add("hidden");
+    triggerBtn.classList.remove("hidden");
+  }
+}
+
+async function handleUserMessage(event) {
+  event.preventDefault();
+  const inputField = document.getElementById("chat-input-field");
+  const logsBox = document.getElementById("chat-logs-box");
+  const promptQuery = inputField.value.trim();
+  
+  if (!promptQuery) return;
+  
+  // Render user prompt message inside the box logs bubble immediately
+  logsBox.insertAdjacentHTML("beforeend", `
+    <div class="bg-slate-800 border border-slate-700/50 p-3 rounded-xl text-slate-200 text-right max-w-[85%] ml-auto leading-relaxed">
+      ${promptQuery}
+    </div>
+  `);
+  
+  inputField.value = "";
+  logsBox.scrollTop = logsBox.scrollHeight;
+  
+  // Render temporary "Thinking..." streaming loader status indicator
+  const loadingId = "msg-loader-" + Date.now();
+  logsBox.insertAdjacentHTML("beforeend", `
+    <div id="${loadingId}" class="bg-slate-950/40 border border-slate-800 text-slate-400 p-3 rounded-xl max-w-[85%] mr-auto italic animate-pulse">
+      Analyzing spreadsheet ledger...
+    </div>
+  `);
+  logsBox.scrollTop = logsBox.scrollHeight;
+
+  // Placeholder interface routing hook. We will link this live to an LLM endpoint next.
+  setTimeout(() => {
+    const loaderElement = document.getElementById(loadingId);
+    if (loaderElement) loaderElement.remove();
+    
+    logsBox.insertAdjacentHTML("beforeend", `
+      <div class="bg-slate-900/60 border border-slate-800 p-3 rounded-xl text-slate-300 max-w-[85%] mr-auto leading-relaxed">
+        I am currently setting up my live cloud processing link. Soon I will inspect your <strong>${globalRecords.length} lines of historical data</strong> to help answer: "${promptQuery}"!
+      </div>
+    `);
+    logsBox.scrollTop = logsBox.scrollHeight;
+  }, 1200);
+}
