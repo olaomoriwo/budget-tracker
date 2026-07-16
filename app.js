@@ -2,11 +2,10 @@
 let trendChartInstance = null;
 let budgetChartInstance = null;
 let utilisationChartInstance = null;
-let globalHistoricalData = null; // Stores data in memory for the month dropdown filter
+let globalHistoricalData = null;
 
 async function fetchBudgetData() {
   try {
-    // Robust Ledger Data structure ensuring structural integrity across months
     const mockData = {
       metrics: { income: 2040.35, outgoings: 5977.63, saved: 850.00, titheBalance: 204.04 },
       historical: {
@@ -25,46 +24,34 @@ async function fetchBudgetData() {
       ]
     };
 
-    // Cache historical metrics in memory and build the month dropdown filter
     globalHistoricalData = mockData.historical;
     populateMonthFilter(Object.keys(mockData.historical).sort().reverse());
-
     renderInterface(mockData);
   } catch (err) {
     console.error("Data Engine Fault:", err);
   }
 }
 
-// Builds the interactive option rows for your month selection filter
 function populateMonthFilter(months) {
   const filterEl = document.getElementById("month-filter");
   if (!filterEl) return;
-  
-  // Preserve current selection if it exists, otherwise build clean options
   const currentSelection = filterEl.value;
   filterEl.innerHTML = months.map(m => `<option value="${m}">${m}</option>`).join('');
-  
   if (currentSelection && months.includes(currentSelection)) {
     filterEl.value = currentSelection;
   } else if (months.length > 0) {
-    filterEl.value = months[0]; // Default to the most recent month row
+    filterEl.value = months[0];
   }
 }
 
-// Triggers automatically whenever you change the active month filter selection dropdown
 function renderActiveMonthCharts() {
   const filterEl = document.getElementById("month-filter");
   if (!filterEl || !globalHistoricalData) return;
-  
   const selectedMonth = filterEl.value;
   const monthData = globalHistoricalData[selectedMonth];
-  
   if (monthData) {
-    // Dynamic recalculation of the interface metrics relative to the filtered month selection
     document.getElementById("metric-income").innerText = `£${(monthData.income || 0).toLocaleString()}`;
     document.getElementById("metric-outgoings").innerText = `£${(monthData.outgoings || 0).toLocaleString()}`;
-    
-    // Refresh the radial utilization chart view to match the selected period parameters
     renderUtilisationChart({ outgoings: monthData.outgoings, saved: 850 }); 
   }
 }
@@ -100,16 +87,11 @@ function renderUtilisationChart(metrics) {
   const ctx = document.getElementById("utilisationPieChart");
   if (!ctx) return;
   if (utilisationChartInstance) utilisationChartInstance.destroy();
-  
   utilisationChartInstance = new Chart(ctx, {
     type: 'doughnut',
     data: {
       labels: ['Outflow', 'Stored'],
-      datasets: [{
-        data: [metrics.outgoings, metrics.saved],
-        backgroundColor: ['rgba(245, 158, 11, 0.8)', 'rgba(99, 102, 241, 0.8)'],
-        borderWidth: 0
-      }]
+      datasets: [{ data: [metrics.outgoings, metrics.saved], backgroundColor: ['rgba(245, 158, 11, 0.8)', 'rgba(99, 102, 241, 0.8)'], borderWidth: 0 }]
     },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '75%' }
   });
@@ -119,7 +101,6 @@ function renderAllocationChart(allocations) {
   const ctx = document.getElementById("budgetVsActualChart");
   if (!ctx) return;
   if (budgetChartInstance) budgetChartInstance.destroy();
-  
   budgetChartInstance = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -180,10 +161,8 @@ function renderHistoricalTrend(historicalData) {
     }
   });
 
-  // Smooth curtain masking touch controller logic
   const container = document.getElementById("chart-touch-container");
   const curtain = document.getElementById("chart-reveal-curtain");
-  
   if (!container || !curtain) return;
 
   const handleScrubMove = (e) => {
@@ -192,7 +171,8 @@ function renderHistoricalTrend(historicalData) {
     const relativeX = touch.clientX - rect.left;
     const percentage = Math.max(0, Math.min(100, (relativeX / rect.width) * 100));
     
-    curtain.style.left = `${percentage}%`;
+    // Changing the width element pulls the right curtain back gracefully
+    curtain.style.width = (100 - percentage) + '%';
   };
 
   container.addEventListener('touchmove', handleScrubMove, { passive: true });
@@ -218,11 +198,10 @@ async function handleUserMessage(event) {
     const res = await fetch(gatewayURL, { method: "POST", body: JSON.stringify({ prompt: promptText }) });
     const data = await res.json();
     document.getElementById(loadingId).remove();
-    
     logsBox.insertAdjacentHTML("beforeend", `<div class="bg-indigo-950/40 border border-indigo-900/50 p-3 rounded-xl text-slate-200 max-w-[85%] mr-auto mt-2">${data.reply}</div>`);
   } catch (err) {
     document.getElementById(loadingId).remove();
-    logsBox.insertAdjacentHTML("beforeend", `<div class="text-rose-400 text-xs mt-2">API Routing failure. Standalone fallback active.</div>`);
+    logsBox.insertAdjacentHTML("beforeend", `<div class="text-rose-400 text-xs mt-2">API Routing failure. Fallback active.</div>`);
   }
   logsBox.scrollTop = logsBox.scrollHeight;
 }
