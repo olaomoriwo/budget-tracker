@@ -2,10 +2,11 @@
 let trendChartInstance = null;
 let budgetChartInstance = null;
 let utilisationChartInstance = null;
+let globalHistoricalData = null; // Stores data in memory for the month dropdown filter
 
 async function fetchBudgetData() {
   try {
-    // Robust Mock Data structure ensuring structural integrity
+    // Robust Ledger Data structure ensuring structural integrity across months
     const mockData = {
       metrics: { income: 2040.35, outgoings: 5977.63, saved: 850.00, titheBalance: 204.04 },
       historical: {
@@ -24,9 +25,47 @@ async function fetchBudgetData() {
       ]
     };
 
+    // Cache historical metrics in memory and build the month dropdown filter
+    globalHistoricalData = mockData.historical;
+    populateMonthFilter(Object.keys(mockData.historical).sort().reverse());
+
     renderInterface(mockData);
   } catch (err) {
     console.error("Data Engine Fault:", err);
+  }
+}
+
+// Builds the interactive option rows for your month selection filter
+function populateMonthFilter(months) {
+  const filterEl = document.getElementById("month-filter");
+  if (!filterEl) return;
+  
+  // Preserve current selection if it exists, otherwise build clean options
+  const currentSelection = filterEl.value;
+  filterEl.innerHTML = months.map(m => `<option value="${m}">${m}</option>`).join('');
+  
+  if (currentSelection && months.includes(currentSelection)) {
+    filterEl.value = currentSelection;
+  } else if (months.length > 0) {
+    filterEl.value = months[0]; // Default to the most recent month row
+  }
+}
+
+// Triggers automatically whenever you change the active month filter selection dropdown
+function renderActiveMonthCharts() {
+  const filterEl = document.getElementById("month-filter");
+  if (!filterEl || !globalHistoricalData) return;
+  
+  const selectedMonth = filterEl.value;
+  const monthData = globalHistoricalData[selectedMonth];
+  
+  if (monthData) {
+    // Dynamic recalculation of the interface metrics relative to the filtered month selection
+    document.getElementById("metric-income").innerText = `£${(monthData.income || 0).toLocaleString()}`;
+    document.getElementById("metric-outgoings").innerText = `£${(monthData.outgoings || 0).toLocaleString()}`;
+    
+    // Refresh the radial utilization chart view to match the selected period parameters
+    renderUtilisationChart({ outgoings: monthData.outgoings, saved: 850 }); 
   }
 }
 
@@ -61,6 +100,7 @@ function renderUtilisationChart(metrics) {
   const ctx = document.getElementById("utilisationPieChart");
   if (!ctx) return;
   if (utilisationChartInstance) utilisationChartInstance.destroy();
+  
   utilisationChartInstance = new Chart(ctx, {
     type: 'doughnut',
     data: {
@@ -79,6 +119,7 @@ function renderAllocationChart(allocations) {
   const ctx = document.getElementById("budgetVsActualChart");
   if (!ctx) return;
   if (budgetChartInstance) budgetChartInstance.destroy();
+  
   budgetChartInstance = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -139,7 +180,7 @@ function renderHistoricalTrend(historicalData) {
     }
   });
 
-  // HTML Curtain-reveal controller engine
+  // Smooth curtain masking touch controller logic
   const container = document.getElementById("chart-touch-container");
   const curtain = document.getElementById("chart-reveal-curtain");
   
@@ -151,7 +192,6 @@ function renderHistoricalTrend(historicalData) {
     const relativeX = touch.clientX - rect.left;
     const percentage = Math.max(0, Math.min(100, (relativeX / rect.width) * 100));
     
-    // Smoothly shift the curtain out of the way to show the chart lines beneath
     curtain.style.left = `${percentage}%`;
   };
 
