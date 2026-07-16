@@ -1,16 +1,21 @@
 {
-  "short_name": "BudgetApp",
-  "name": "Live Budget and Expense Tracker",
+  "short_name": "BudgetEngine",
+  "name": "Budget Command Centre Engine",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/2953/2953423.png",
+      "src": "https://img.icons8.com/fluency/192/000000/wallet.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://img.icons8.com/fluency/512/000000/wallet.png",
       "type": "image/png",
       "sizes": "512x512"
     }
   ],
   "start_url": "./index.html",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
+  "background_color": "#0b0f19",
+  "theme_color": "#0b0f19",
   "display": "standalone",
   "orientation": "portrait"
 }
