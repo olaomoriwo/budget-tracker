@@ -189,79 +189,7 @@ function renderUtilisationPie(income, outgoings) {
 }
 
 
-function renderHistoricalTrend(historicalData) {
-  const ctx = document.getElementById("historicalTrendChart");
-  if (!ctx) return;
-  if (window.trendChartInstance) window.trendChartInstance.destroy();
 
-  const labels = Object.keys(historicalData).sort();
-  const outgoingData = labels.map(m => historicalData[m].outgoings);
-  const incomingData = labels.map(m => historicalData[m].income || historicalData[m].budgetedIncome || 0);
-
-  const ctx2d = ctx.getContext('2d');
-  const greenGrad = ctx2d.createLinearGradient(0, 0, 0, 120);
-  greenGrad.addColorStop(0, 'rgba(16, 185, 129, 0.25)');
-  greenGrad.addColorStop(1, 'rgba(16, 185, 129, 0.00)');
-
-  const amberGrad = ctx2d.createLinearGradient(0, 0, 0, 120);
-  amberGrad.addColorStop(0, 'rgba(245, 158, 11, 0.20)');
-  amberGrad.addColorStop(1, 'rgba(245, 158, 11, 0.00)');
-
-  window.trendChartInstance = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: labels,
-      datasets: [
-        {
-          label: 'Inflow (£)',
-          data: incomingData,
-          borderColor: '#10b981',
-          borderWidth: 2,
-          pointRadius: 0,
-          pointHoverRadius: 5,
-          pointHoverBackgroundColor: '#10b981',
-          backgroundColor: greenGrad,
-          fill: true,
-          tension: 0.3
-        },
-        {
-          label: 'Outflow (£)',
-          data: outgoingData,
-          borderColor: '#f59e0b',
-          borderWidth: 2,
-          pointRadius: 0,
-          pointHoverRadius: 5,
-          pointHoverBackgroundColor: '#f59e0b',
-          backgroundColor: amberGrad,
-          fill: true,
-          tension: 0.3
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { 
-        legend: { display: false },
-        tooltip: {
-          enabled: true,
-          mode: 'index',
-          intersect: false,
-          backgroundColor: '#1e293b',
-          titleColor: '#94a3b8',
-          bodyColor: '#f1f5f9',
-          borderColor: '#334155',
-          borderWidth: 1,
-          padding: 8
-        }
-      },
-      interaction: { mode: 'index', intersect: false },
-      scales: {
-        x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 9 } } },
-        y: { grid: { color: '#1e293b', drawTicks: false }, ticks: { color: '#64748b', font: { size: 9 }, maxTicksLimit: 4 } }
-      }
-    }
-  });
 
   // Robinhood scrubber simulation tracking
   const triggerScrubber = (evt) => {
@@ -357,3 +285,102 @@ async function handleUserMessage(event) {
 }
 
 window.addEventListener("DOMContentLoaded", fetchBudgetData);
+
+
+// Global tracking instances
+window.trendChartInstance = null;
+
+function renderHistoricalTrend(historicalData) {
+  const ctx = document.getElementById("historicalTrendChart");
+  if (!ctx) return;
+  if (window.trendChartInstance) {
+    window.trendChartInstance.destroy();
+  }
+
+  const labels = Object.keys(historicalData).sort();
+  const outgoingData = labels.map(m => historicalData[m].outgoings || 0);
+  const incomingData = labels.map(m => historicalData[m].income || historicalData[m].budgetedIncome || 0);
+
+  const ctx2d = ctx.getContext('2d');
+  const greenGrad = ctx2d.createLinearGradient(0, 0, 0, 120);
+  greenGrad.addColorStop(0, 'rgba(16, 185, 129, 0.25)');
+  greenGrad.addColorStop(1, 'rgba(16, 185, 129, 0.00)');
+
+  const amberGrad = ctx2d.createLinearGradient(0, 0, 0, 120);
+  amberGrad.addColorStop(0, 'rgba(245, 158, 11, 0.20)');
+  amberGrad.addColorStop(1, 'rgba(245, 158, 11, 0.00)');
+
+  window.trendChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Inflow (£)',
+          data: incomingData,
+          borderColor: '#10b981',
+          borderWidth: 2,
+          pointRadius: 0,
+          pointHoverRadius: 5,
+          pointHoverBackgroundColor: '#10b981',
+          backgroundColor: greenGrad,
+          fill: true,
+          tension: 0.3
+        },
+        {
+          label: 'Outflow (£)',
+          data: outgoingData,
+          borderColor: '#f59e0b',
+          borderWidth: 2,
+          pointRadius: 0,
+          pointHoverRadius: 5,
+          pointHoverBackgroundColor: '#f59e0b',
+          backgroundColor: amberGrad,
+          fill: true,
+          tension: 0.3
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { 
+        legend: { display: false },
+        tooltip: {
+          enabled: true,
+          mode: 'index',
+          intersect: false,
+          backgroundColor: '#1e293b',
+          titleColor: '#94a3b8',
+          bodyColor: '#f1f5f9',
+          borderColor: '#334155',
+          borderWidth: 1,
+          padding: 8
+        }
+      },
+      interaction: { mode: 'index', intersect: false },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 9 } } },
+        y: { grid: { color: '#1e293b', drawTicks: false }, ticks: { color: '#64748b', font: { size: 9 }, maxTicksLimit: 4 } }
+      }
+    }
+  });
+
+  // Robinhood touch scrubbing logic
+  const triggerScrubber = (chartX, chartY) => {
+    if (!window.trendChartInstance) return;
+    const points = window.trendChartInstance.getElementsAtEventForMode({ x: chartX, y: chartY }, 'index', { intersect: false }, true);
+    if (points.length) {
+      window.trendChartInstance.tooltip.setActiveElements(points, { x: chartX, y: chartY });
+      window.trendChartInstance.render();
+    }
+  };
+
+  ctx.addEventListener('touchmove', (e) => {
+    const rect = ctx.getBoundingClientRect();
+    const touch = e.touches[0];
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    triggerScrubber(x, y);
+  }, { passive: true });
+}
