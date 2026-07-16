@@ -188,27 +188,20 @@ function renderUtilisationPie(income, outgoings) {
   });
 }
 
+
 function renderHistoricalTrend(historicalData) {
   const ctx = document.getElementById("historicalTrendChart");
   if (!ctx) return;
-
-  // Clear down active structural instances
   if (window.trendChartInstance) window.trendChartInstance.destroy();
 
   const labels = Object.keys(historicalData).sort();
   const outgoingData = labels.map(m => historicalData[m].outgoings);
-  
-  // Dynamically aggregate net income metrics for parity mapping
-  const incomingData = labels.map(m => {
-    return historicalData[m].income || (historicalData[m].budgetedIncome || 0);
-  });
+  const incomingData = labels.map(m => historicalData[m].income || historicalData[m].budgetedIncome || 0);
 
-  // Create subtle premium Robinhood-styled gradient layers
   const ctx2d = ctx.getContext('2d');
-  
   const greenGrad = ctx2d.createLinearGradient(0, 0, 0, 120);
-  greenGrad.addColorStop(0, 'rgba(52, 211, 153, 0.25)');
-  greenGrad.addColorStop(1, 'rgba(52, 211, 153, 0.00)');
+  greenGrad.addColorStop(0, 'rgba(16, 185, 129, 0.25)');
+  greenGrad.addColorStop(1, 'rgba(16, 185, 129, 0.00)');
 
   const amberGrad = ctx2d.createLinearGradient(0, 0, 0, 120);
   amberGrad.addColorStop(0, 'rgba(245, 158, 11, 0.20)');
@@ -259,33 +252,19 @@ function renderHistoricalTrend(historicalData) {
           bodyColor: '#f1f5f9',
           borderColor: '#334155',
           borderWidth: 1,
-          padding: 8,
-          boxPadding: 4,
-          displayColors: true,
-          callbacks: {
-            title: function(context) { return 'Period: ' + context[0].label; }
-          }
+          padding: 8
         }
       },
-      interaction: {
-        mode: 'index',
-        intersect: false
-      },
+      interaction: { mode: 'index', intersect: false },
       scales: {
-        x: {
-          grid: { display: false },
-          ticks: { color: '#64748b', font: { size: 9 } }
-        },
-        y: {
-          grid: { color: '#1e293b', drawTicks: false },
-          ticks: { color: '#64748b', font: { size: 9 }, maxTicksLimit: 4 }
-        }
+        x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 9 } } },
+        y: { grid: { color: '#1e293b', drawTicks: false }, ticks: { color: '#64748b', font: { size: 9 }, maxTicksLimit: 4 } }
       }
     }
   });
 
-  // Handle high-frequency touch panning drag interactions (Robinhood Scrubber Emulation)
-  const triggerTooltipScrubber = (evt) => {
+  // Robinhood scrubber simulation tracking
+  const triggerScrubber = (evt) => {
     const points = window.trendChartInstance.getElementsAtEventForMode(evt, 'index', { intersect: false }, true);
     if (points.length) {
       window.trendChartInstance.tooltip.setActiveElements(points, { x: evt.chartX, y: evt.chartY });
@@ -293,16 +272,13 @@ function renderHistoricalTrend(historicalData) {
     }
   };
 
-  ctx.addEventListener('touchstart', (e) => { e.stopPropagation(); }, { passive: true });
   ctx.addEventListener('touchmove', (e) => {
     const rect = ctx.getBoundingClientRect();
     const touch = e.touches[0];
-    const chartX = touch.clientX - rect.left;
-    const chartY = touch.clientY - rect.top;
-    triggerTooltipScrubber({ chartX, chartY });
+    triggerScrubber({ chartX: touch.clientX - rect.left, chartY: touch.clientY - rect.top });
   }, { passive: true });
 }
-}
+
 
 function toggleChatWindow() {
   const triggerBtn = document.getElementById("chat-trigger-btn");
