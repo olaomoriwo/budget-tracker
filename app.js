@@ -188,23 +188,120 @@ function renderUtilisationPie(income, outgoings) {
   });
 }
 
-function renderHistoricalTrendChart(records) {
-  const months = [...new Set(records.map(r => r.Month ? r.Month.toString().substring(0, 7) : ""))].filter(Boolean).sort();
-  const monthlyTotals = months.map(m => {
-    return records.filter(r => r.Month && r.Month.toString().substring(0, 7) === m && r.Item !== "Net Take-Home")
-                  .reduce((sum, r) => sum + (parseFloat(r.Actual) || 0), 0);
-  });
+function renderHistoricalTrend(historicalData) {
+  const ctx = document.getElementById("historicalTrendChart");
+  if (!ctx) return;
+
+  // Clear down active structural instances
+  if (window.trendChartInstance) window.trendChartInstance.destroy();
+
+  const labels = Object.keys(historicalData).sort();
+  const outgoingData = labels.map(m => historicalData[m].outgoings);
   
-  if (trendChartInstance) trendChartInstance.destroy();
-  const ctx = document.getElementById("historicalTrendChart").getContext("2d");
-  trendChartInstance = new Chart(ctx, {
-    type: "line",
-    data: {
-      labels: months,
-      datasets: [{ label: "Total Outgoings (£)", data: monthlyTotals, borderColor: "#f59e0b", backgroundColor: "rgba(245, 158, 11, 0.1)", tension: 0.2, fill: true }]
-    },
-    options: { responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { color: "#94a3b8" } }, x: { ticks: { color: "#94a3b8" } } } }
+  // Dynamically aggregate net income metrics for parity mapping
+  const incomingData = labels.map(m => {
+    return historicalData[m].income || (historicalData[m].budgetedIncome || 0);
   });
+
+  // Create subtle premium Robinhood-styled gradient layers
+  const ctx2d = ctx.getContext('2d');
+  
+  const greenGrad = ctx2d.createLinearGradient(0, 0, 0, 120);
+  greenGrad.addColorStop(0, 'rgba(52, 211, 153, 0.25)');
+  greenGrad.addColorStop(1, 'rgba(52, 211, 153, 0.00)');
+
+  const amberGrad = ctx2d.createLinearGradient(0, 0, 0, 120);
+  amberGrad.addColorStop(0, 'rgba(245, 158, 11, 0.20)');
+  amberGrad.addColorStop(1, 'rgba(245, 158, 11, 0.00)');
+
+  window.trendChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Inflow (£)',
+          data: incomingData,
+          borderColor: '#10b981',
+          borderWidth: 2,
+          pointRadius: 0,
+          pointHoverRadius: 5,
+          pointHoverBackgroundColor: '#10b981',
+          backgroundColor: greenGrad,
+          fill: true,
+          tension: 0.3
+        },
+        {
+          label: 'Outflow (£)',
+          data: outgoingData,
+          borderColor: '#f59e0b',
+          borderWidth: 2,
+          pointRadius: 0,
+          pointHoverRadius: 5,
+          pointHoverBackgroundColor: '#f59e0b',
+          backgroundColor: amberGrad,
+          fill: true,
+          tension: 0.3
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { 
+        legend: { display: false },
+        tooltip: {
+          enabled: true,
+          mode: 'index',
+          intersect: false,
+          backgroundColor: '#1e293b',
+          titleColor: '#94a3b8',
+          bodyColor: '#f1f5f9',
+          borderColor: '#334155',
+          borderWidth: 1,
+          padding: 8,
+          boxPadding: 4,
+          displayColors: true,
+          callbacks: {
+            title: function(context) { return 'Period: ' + context[0].label; }
+          }
+        }
+      },
+      interaction: {
+        mode: 'index',
+        intersect: false
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: '#64748b', font: { size: 9 } }
+        },
+        y: {
+          grid: { color: '#1e293b', drawTicks: false },
+          ticks: { color: '#64748b', font: { size: 9 }, maxTicksLimit: 4 }
+        }
+      }
+    }
+  });
+
+  // Handle high-frequency touch panning drag interactions (Robinhood Scrubber Emulation)
+  const triggerTooltipScrubber = (evt) => {
+    const points = window.trendChartInstance.getElementsAtEventForMode(evt, 'index', { intersect: false }, true);
+    if (points.length) {
+      window.trendChartInstance.tooltip.setActiveElements(points, { x: evt.chartX, y: evt.chartY });
+      window.trendChartInstance.render();
+    }
+  };
+
+  ctx.addEventListener('touchstart', (e) => { e.stopPropagation(); }, { passive: true });
+  ctx.addEventListener('touchmove', (e) => {
+    const rect = ctx.getBoundingClientRect();
+    const touch = e.touches[0];
+    const chartX = touch.clientX - rect.left;
+    const chartY = touch.clientY - rect.top;
+    triggerTooltipScrubber({ chartX, chartY });
+  }, { passive: true });
+}
 }
 
 function toggleChatWindow() {
