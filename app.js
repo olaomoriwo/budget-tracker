@@ -159,7 +159,7 @@ function renderActiveMonthCharts() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      scales: { y: { ticks: { color: "#94a3b8" }, grid: { color: "#334155" } }, x: { ticks: { color: "#94a3b8" }, grid: { display: false } } }
+      scales: { y: { ticks: { color: "#94a3b8" }, grid: { color: "#334155" } }, x: { ticks: { color: "#94a3b8" }, grid: { display: false }, maxRotation: 0, minRotation: 0, ticks: { autoSkip: true, maxTicksLimit: 6, color: "#64748b", font: { size: 9 } } } }
     }
   });
 
@@ -184,7 +184,7 @@ function renderUtilisationPie(income, outgoings) {
       labels: ["Spent", "Remaining Buffer"],
       datasets: [{ data: [Math.min(outgoings, income), remainingBuffer], backgroundColor: ["#f43f5e", "#10b981"], borderWidth: 0 }]
     },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: "75%" }
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, maxRotation: 0, minRotation: 0, ticks: { autoSkip: true, maxTicksLimit: 6, color: "#64748b", font: { size: 9 } } }, cutout: "75%" }
   });
 }
 
