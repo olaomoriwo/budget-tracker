@@ -1,13 +1,11 @@
 // Secure Global Architecture Settings
-const GEMINI_API_KEY = "AIzaSyD..."; // Keep your exact API Key here if different
 let trendChartInstance = null;
 let budgetChartInstance = null;
 let utilisationChartInstance = null;
 
-// Core Initialization Engine
 async function fetchBudgetData() {
   try {
-    // Fallback Mock Data Structure to ensure your screen NEVER loads blank
+    // Robust Mock Data structure ensuring structural integrity
     const mockData = {
       metrics: { income: 2040.35, outgoings: 5977.63, saved: 850.00, titheBalance: 204.04 },
       historical: {
@@ -33,7 +31,6 @@ async function fetchBudgetData() {
 }
 
 function renderInterface(data) {
-  // Update Core Metrics
   document.getElementById("metric-income").innerText = `£${data.metrics.income.toLocaleString()}`;
   document.getElementById("metric-outgoings").innerText = `£${data.metrics.outgoings.toLocaleString()}`;
   document.getElementById("metric-saved").innerText = `£${data.metrics.saved.toLocaleString()}`;
@@ -45,7 +42,6 @@ function renderInterface(data) {
     titheBanner.classList.remove("hidden");
   }
 
-  // Update Insights Feed
   const insightsContainer = document.getElementById("advisor-insights");
   if (insightsContainer) {
     insightsContainer.innerHTML = data.insights.map(msg => `
@@ -56,7 +52,6 @@ function renderInterface(data) {
     `).join('');
   }
 
-  // Fire Up UI Charts
   renderUtilisationChart(data.metrics);
   renderAllocationChart(data.allocations);
   renderHistoricalTrend(data.historical);
@@ -66,7 +61,6 @@ function renderUtilisationChart(metrics) {
   const ctx = document.getElementById("utilisationPieChart");
   if (!ctx) return;
   if (utilisationChartInstance) utilisationChartInstance.destroy();
-
   utilisationChartInstance = new Chart(ctx, {
     type: 'doughnut',
     data: {
@@ -77,12 +71,7 @@ function renderUtilisationChart(metrics) {
         borderWidth: 0
       }]
     },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      cutout: '75%'
-    }
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '75%' }
   });
 }
 
@@ -90,7 +79,6 @@ function renderAllocationChart(allocations) {
   const ctx = document.getElementById("budgetVsActualChart");
   if (!ctx) return;
   if (budgetChartInstance) budgetChartInstance.destroy();
-
   budgetChartInstance = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -151,22 +139,25 @@ function renderHistoricalTrend(historicalData) {
     }
   });
 
-  // Touch Scrubber Interactive Framework
-  const handleScrub = (e) => {
-    const rect = ctx.getBoundingClientRect();
+  // HTML Curtain-reveal controller engine
+  const container = document.getElementById("chart-touch-container");
+  const curtain = document.getElementById("chart-reveal-curtain");
+  
+  if (!container || !curtain) return;
+
+  const handleScrubMove = (e) => {
+    const rect = container.getBoundingClientRect();
     const touch = e.touches[0];
-    const x = touch.clientX - rect.left;
-    const y = touch.clientY - rect.top;
-    const points = trendChartInstance.getElementsAtEventForMode({ x, y }, 'index', { intersect: false }, true);
-    if (points.length) {
-      trendChartInstance.tooltip.setActiveElements(points, { x, y });
-      trendChartInstance.render();
-    }
+    const relativeX = touch.clientX - rect.left;
+    const percentage = Math.max(0, Math.min(100, (relativeX / rect.width) * 100));
+    
+    // Smoothly shift the curtain out of the way to show the chart lines beneath
+    curtain.style.left = `${percentage}%`;
   };
-  ctx.addEventListener('touchmove', handleScrub, { passive: true });
+
+  container.addEventListener('touchmove', handleScrubMove, { passive: true });
 }
 
-// AI Gateway Proxy Routing
 async function handleUserMessage(event) {
   event.preventDefault();
   const inputEl = document.getElementById("chat-input-field");
@@ -183,11 +174,8 @@ async function handleUserMessage(event) {
   logsBox.insertAdjacentHTML("beforeend", `<div id="${loadingId}" class="text-slate-500 italic text-xs mt-1">Analyzing financial streams...</div>`);
 
   try {
-    const gatewayURL = "https://script.google.com/macros/s/AKfycbz_your_actual_script_id/exec"; // Ensure your script URL matches here
-    const res = await fetch(gatewayURL, {
-      method: "POST",
-      body: JSON.stringify({ prompt: promptText })
-    });
+    const gatewayURL = "https://script.google.com/macros/s/AKfycbz_your_actual_script_id/exec";
+    const res = await fetch(gatewayURL, { method: "POST", body: JSON.stringify({ prompt: promptText }) });
     const data = await res.json();
     document.getElementById(loadingId).remove();
     

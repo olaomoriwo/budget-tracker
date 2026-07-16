@@ -1,18 +1,6 @@
 <!DOCTYPE html>
 <html lang="en-GB">
 <head>
-<link rel="manifest" href="manifest.json">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <script>
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./sw.js")
-          .then(reg => console.log("PWA Engine Booted Successfully"))
-          .catch(err => console.log("PWA Engine Failed", err));
-      });
-    }
-  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Wallet Core</title>
@@ -26,12 +14,7 @@
     }
     .safe-top { padding-top: env(safe-area-inset-top); }
     .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
-    html, body {
-      position: fixed;
-      overflow: hidden;
-      width: 100%;
-      height: 100%;
-    }
+    html, body { position: fixed; overflow: hidden; width: 100%; height: 100%; }
   </style>
 </head>
 <body class="text-slate-200 antialiased font-sans w-full h-full select-none flex flex-col">
@@ -48,7 +31,6 @@
   </header>
 
   <main id="tab-dashboard" class="tab-content flex-1 overflow-y-auto px-5 py-4 space-y-5 max-w-md mx-auto w-full pb-24">
-    
     <div id="tithe-floating-banner" class="hidden bg-amber-500/5 border border-amber-500/10 p-4 rounded-2xl flex items-center justify-between">
       <div>
         <span class="text-[10px] uppercase font-bold tracking-wider text-amber-500 block">System Alert</span>
@@ -89,10 +71,20 @@
     </div>
 
     <div class="bg-slate-900/20 border border-slate-900/60 rounded-2xl p-5">
-      <h3 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-4">Historical Spend Map</h3>
-      <div class="relative h-32 w-full">
-        <canvas id="historicalTrendChart"></canvas>
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Historical Spend Map</h3>
+        <div class="flex items-center space-x-3 text-[10px] font-semibold">
+          <span class="text-emerald-400">● Inflow</span>
+          <span class="text-amber-500">● Outflow</span>
+        </div>
       </div>
+      
+      <div id="chart-touch-container" class="relative h-32 w-full overflow-hidden rounded-xl bg-slate-950/20 touch-pan-x select-none">
+        <canvas id="historicalTrendChart" class="w-full h-full"></canvas>
+        
+        <div id="chart-reveal-curtain" class="absolute inset-y-0 right-0 left-0 bg-[#0b0f19] pointer-events-none transition-all duration-75 border-l border-indigo-500/30 shadow-[-10px_0_15px_-5px_rgba(11,15,25,0.9)]"></div>
+      </div>
+      <p class="text-[10px] text-center text-slate-500 mt-2">Glide thumb across canvas to unveil timeline</p>
     </div>
   </main>
 
@@ -110,7 +102,6 @@
         👋 Hello! I am your AI financial agent. I have immediate, private access to your multi-month budgeting data. Ask me anything about your income utilisation, spending risks, or savings pacing!
       </div>
     </div>
-
     <form onsubmit="handleUserMessage(event)" class="p-4 bg-[#0b0f19] border-t border-slate-900 flex items-center space-x-2 safe-bottom shrink-0">
       <input id="chat-input-field" type="text" placeholder="Ask about budgets or goals..." class="flex-1 bg-slate-900 border border-slate-900 rounded-xl px-4 py-3 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-slate-700 transition-colors" autocomplete="off" />
       <button type="submit" class="bg-slate-100 text-slate-950 px-4 py-3 rounded-xl font-bold text-xs active:scale-95 transition-transform shrink-0">
@@ -120,15 +111,15 @@
   </main>
 
   <nav class="fixed bottom-0 inset-x-0 z-50 bg-[#0b0f19]/90 backdrop-blur-xl border-t border-slate-900 px-6 py-2 flex justify-around items-center safe-bottom shrink-0">
-    <button onclick="switchTab('dashboard')" id="nav-btn-dashboard" class="flex flex-col items-center space-y-1 text-slate-100 transition-all active:scale-95">
+    <button onclick="switchTab('dashboard')" id="nav-btn-dashboard" class="flex flex-col items-center space-y-1 text-slate-100 transition-all">
       <span class="text-lg">📊</span>
       <span class="text-[9px] font-bold uppercase tracking-wider">Dashboard</span>
     </button>
-    <button onclick="switchTab('alerts')" id="nav-btn-alerts" class="flex flex-col items-center space-y-1 text-slate-500 transition-all active:scale-95">
+    <button onclick="switchTab('alerts')" id="nav-btn-alerts" class="flex flex-col items-center space-y-1 text-slate-500 transition-all">
       <span class="text-lg">🔔</span>
       <span class="text-[9px] font-bold uppercase tracking-wider">Alerts</span>
     </button>
-    <button onclick="switchTab('agent')" id="nav-btn-agent" class="flex flex-col items-center space-y-1 text-slate-500 transition-all active:scale-95">
+    <button onclick="switchTab('agent')" id="nav-btn-agent" class="flex flex-col items-center space-y-1 text-slate-500 transition-all">
       <span class="text-lg">🤖</span>
       <span class="text-[9px] font-bold uppercase tracking-wider">AI Agent</span>
     </button>
@@ -136,34 +127,18 @@
 
   <script>
     function switchTab(tabId) {
-      // Hide all main viewing contents
       document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-      
-      // Reset navigation label opacity matrices
       document.getElementById('nav-btn-dashboard').classList.replace('text-slate-100', 'text-slate-500');
       document.getElementById('nav-btn-alerts').classList.replace('text-slate-100', 'text-slate-500');
       document.getElementById('nav-btn-agent').classList.replace('text-slate-100', 'text-slate-500');
       
-      // Illuminate current active view layers
       const activeTab = document.getElementById('tab-' + tabId);
-      if (tabId === 'agent') {
-        activeTab.classList.remove('hidden');
-        activeTab.classList.add('flex');
-      } else {
-        activeTab.classList.remove('hidden');
-      }
+      if (tabId === 'agent') { activeTab.classList.remove('hidden'); activeTab.classList.add('flex'); }
+      else { activeTab.classList.remove('hidden'); }
       
       document.getElementById('nav-btn-' + tabId).classList.replace('text-slate-500', 'text-slate-100');
-      
-      // Sync Header title configurations dynamically
       const titleMap = { 'dashboard': 'Dashboard', 'alerts': 'Alerts', 'agent': 'AI Financial Assistant' };
       document.getElementById('app-screen-title').innerText = titleMap[tabId];
-      
-      // Auto-recenter log balances if viewing chat layers
-      if(tabId === 'agent') {
-        const logsBox = document.getElementById("chat-logs-box");
-        logsBox.scrollTop = logsBox.scrollHeight;
-      }
     }
   </script>
   <script src="app.js"></script>

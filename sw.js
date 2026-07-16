@@ -1,4 +1,4 @@
-const CACHE_NAME = "budget-v5"; // Incremented to clear old phone memory
+const CACHE_NAME = "budget-v6"; // Incremented to clear old phone memory
 const ASSETS = [
   "./index.html",
   "./app.js",
